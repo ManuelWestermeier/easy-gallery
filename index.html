@@ -202,6 +202,7 @@
           };
           images.push(imageObj);
           saveImages();
+          // Neues Bild der Galerie hinzufügen
           addImageToGallery(imageObj);
         };
         reader.readAsDataURL(file);
@@ -227,12 +228,11 @@
       const gallery = document.getElementById('gallery');
       gallery.innerHTML = '';
       images.forEach(imageObj => {
-        const item = createGalleryItem(imageObj);
-        gallery.appendChild(item);
+        gallery.appendChild(createGalleryItem(imageObj));
       });
     }
 
-    // Einzelnes Galerie-Item erstellen
+    // Erstellt ein einzelnes Galerie-Item
     function createGalleryItem(imageObj) {
       const div = document.createElement('div');
       div.className = 'gallery-item';
@@ -250,6 +250,12 @@
       // Beim Klick Modal öffnen
       div.addEventListener('click', () => openModal(imageObj.id));
       return div;
+    }
+
+    // Fügt ein einzelnes Bild zur Galerie hinzu (ohne komplettes Neu-Rendern)
+    function addImageToGallery(imageObj) {
+      const gallery = document.getElementById('gallery');
+      gallery.appendChild(createGalleryItem(imageObj));
     }
 
     // Suchfunktion: Filtert die Galerie nach Bildnamen
