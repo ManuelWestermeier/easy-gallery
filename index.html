@@ -3,55 +3,92 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Meine Galerie</title>
+  <title>Bildgalerie</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500&display=swap" rel="stylesheet">
   <style>
+    /* Basis-Styling */
+    * { box-sizing: border-box; }
     body {
-      font-family: Arial, sans-serif;
-      background: #f2f2f2;
+      font-family: 'Roboto', sans-serif;
+      background: #f4f4f9;
       margin: 0;
-      padding: 20px;
+      padding: 0;
     }
     .container {
-      max-width: 1000px;
-      margin: 0 auto;
+      max-width: 1200px;
+      margin: auto;
+      padding: 20px;
     }
-    h1 {
-      text-align: center;
-      color: #333;
-    }
-    .upload-section {
+    header {
       text-align: center;
       margin-bottom: 20px;
     }
-    input[type="file"] {
+    header h1 { margin: 0; color: #333; }
+
+    /* Steuerung (Suchfeld & Upload) */
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .controls .search-box {
+      flex: 1;
+      min-width: 250px;
+      margin-right: 10px;
+    }
+    .controls .search-box input {
+      width: 100%;
       padding: 10px;
-      border: 2px solid #ccc;
+      border: 1px solid #ccc;
       border-radius: 5px;
-      background: #fff;
+    }
+    .controls .upload-box {
+      flex: 1;
+      min-width: 200px;
+      text-align: right;
+    }
+    .controls .upload-box input[type="file"] { display: none; }
+    .upload-label {
+      display: inline-block;
+      padding: 10px 20px;
+      background: #007BFF;
+      color: #fff;
+      border-radius: 5px;
       cursor: pointer;
     }
+
+    /* Galerie Grid */
     .gallery {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
       gap: 15px;
     }
     .gallery-item {
       position: relative;
-      overflow: hidden;
+      background: #fff;
       border-radius: 5px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      background: #fff;
+      overflow: hidden;
       cursor: pointer;
       transition: transform 0.2s;
     }
-    .gallery-item:hover {
-      transform: scale(1.05);
+    .gallery-item:hover { transform: scale(1.02); }
+    .gallery-item img { width: 100%; display: block; }
+    .overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      padding: 5px 10px;
+      font-size: 0.9em;
+      display: none;
     }
-    .gallery-item img {
-      width: 100%;
-      display: block;
-    }
-    /* Modal Styles */
+    .gallery-item:hover .overlay { display: block; }
+
+    /* Modal Styling */
     .modal {
       display: none;
       position: fixed;
@@ -62,103 +99,243 @@
       align-items: center;
       z-index: 1000;
     }
-    .modal.active {
-      display: flex;
-    }
-    .modal img {
+    .modal.active { display: flex; }
+    .modal-content {
+      background: #fff;
+      border-radius: 5px;
       max-width: 90%;
       max-height: 90%;
-      border: 5px solid #fff;
-      border-radius: 10px;
+      overflow: auto;
+      padding: 20px;
+      position: relative;
     }
+    .modal-content img { width: 100%; border-radius: 5px; }
+    .modal-details { margin-top: 10px; }
+    .modal-details p { margin: 5px 0; }
+    .modal-buttons {
+      margin-top: 15px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .modal-buttons button {
+      padding: 8px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .btn-download { background: #28a745; color: #fff; }
+    .btn-replace { background: #ffc107; color: #fff; }
+    .btn-delete { background: #dc3545; color: #fff; }
     .close-modal {
       position: absolute;
-      top: 20px;
-      right: 20px;
-      font-size: 2rem;
-      color: #fff;
+      top: 10px;
+      right: 15px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
       cursor: pointer;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Meine Galerie</h1>
-    <div class="upload-section">
-      <input type="file" id="fileInput" accept="image/*">
+    <header>
+      <h1>Bildgalerie</h1>
+    </header>
+    <div class="controls">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Suche nach Bildnamen...">
+      </div>
+      <div class="upload-box">
+        <label for="fileInput" class="upload-label">Bild hochladen</label>
+        <input type="file" id="fileInput" accept="image/*">
+      </div>
     </div>
     <div class="gallery" id="gallery"></div>
   </div>
 
-  <!-- Modal für die Bildvorschau -->
+  <!-- Modal zur Bildvorschau -->
   <div class="modal" id="modal">
-    <span class="close-modal" id="closeModal">&times;</span>
-    <img src="" alt="Bild Vorschau" id="modalImage">
+    <div class="modal-content">
+      <span class="close-modal" id="closeModal">&times;</span>
+      <img src="" alt="Bildvorschau" id="modalImage">
+      <div class="modal-details" id="modalDetails">
+        <p id="modalName"><strong>Name:</strong> </p>
+        <p id="modalDate"><strong>Datum:</strong> </p>
+      </div>
+      <div class="modal-buttons">
+        <button class="btn-download" id="downloadBtn">Download</button>
+        <button class="btn-replace" id="replaceBtn">Ersetzen</button>
+        <button class="btn-delete" id="deleteBtn">Löschen</button>
+      </div>
+      <!-- Hidden File Input für den Replace-Vorgang -->
+      <input type="file" id="replaceInput" accept="image/*" style="display: none;">
+    </div>
   </div>
 
   <script>
     const STORAGE_KEY = 'galleryImages';
+    let images = [];
+    let currentImageId = null; // Aktuell ausgewähltes Bild im Modal
 
-    // Beim Laden der Seite werden alle gespeicherten Bilder geladen
-    document.addEventListener('DOMContentLoaded', loadGallery);
+    // Beim Laden der Seite Galerie und Suchfunktion initialisieren
+    document.addEventListener('DOMContentLoaded', () => {
+      loadGallery();
+      document.getElementById('searchInput').addEventListener('input', filterGallery);
+    });
 
+    // Neuen Bild-Upload verarbeiten
     document.getElementById('fileInput').addEventListener('change', function(event) {
       const file = event.target.files[0];
       if (file) {
         const reader = new FileReader();
         reader.onload = function(e) {
           const dataURL = e.target.result;
-          // Bild im Local Storage speichern
-          let images = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-          images.push(dataURL);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
-          // Bild in der Galerie hinzufügen
-          addImageToGallery(dataURL);
+          const imageObj = {
+            id: Date.now(),
+            name: file.name,
+            date: new Date().toLocaleString(),
+            dataURL: dataURL
+          };
+          images.push(imageObj);
+          saveImages();
+          addImageToGallery(imageObj);
         };
         reader.readAsDataURL(file);
       }
+      // Input zurücksetzen, damit auch gleiche Datei erneut hochgeladen werden kann
+      event.target.value = '';
     });
 
+    // Bilder im Local Storage speichern
+    function saveImages() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
+    }
+
+    // Galerie aus dem Local Storage laden
     function loadGallery() {
+      const storedImages = localStorage.getItem(STORAGE_KEY);
+      images = storedImages ? JSON.parse(storedImages) : [];
+      renderGallery();
+    }
+
+    // Galerie neu rendern
+    function renderGallery() {
       const gallery = document.getElementById('gallery');
       gallery.innerHTML = '';
-      const images = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-      images.forEach(dataURL => {
-        addImageToGallery(dataURL);
+      images.forEach(imageObj => {
+        const item = createGalleryItem(imageObj);
+        gallery.appendChild(item);
       });
     }
 
-    function addImageToGallery(dataURL) {
-      const gallery = document.getElementById('gallery');
+    // Einzelnes Galerie-Item erstellen
+    function createGalleryItem(imageObj) {
       const div = document.createElement('div');
       div.className = 'gallery-item';
+      div.dataset.id = imageObj.id;
+      
       const img = document.createElement('img');
-      img.src = dataURL;
+      img.src = imageObj.dataURL;
       div.appendChild(img);
-      gallery.appendChild(div);
+      
+      const overlay = document.createElement('div');
+      overlay.className = 'overlay';
+      overlay.innerHTML = `<strong>${imageObj.name}</strong><br>${imageObj.date}`;
+      div.appendChild(overlay);
+      
+      // Beim Klick Modal öffnen
+      div.addEventListener('click', () => openModal(imageObj.id));
+      return div;
+    }
 
-      // Beim Klick wird das Modal mit dem Bild geöffnet
-      div.addEventListener('click', function() {
-        openModal(dataURL);
+    // Suchfunktion: Filtert die Galerie nach Bildnamen
+    function filterGallery() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const galleryItems = document.querySelectorAll('.gallery-item');
+      galleryItems.forEach(item => {
+        const id = item.dataset.id;
+        const imageObj = images.find(img => img.id == id);
+        item.style.display = (imageObj && imageObj.name.toLowerCase().includes(query)) ? '' : 'none';
       });
     }
 
-    function openModal(dataURL) {
-      const modal = document.getElementById('modal');
-      const modalImage = document.getElementById('modalImage');
-      modalImage.src = dataURL;
-      modal.classList.add('active');
+    // Öffnet das Modal mit den Bildinformationen und Aktionen
+    function openModal(id) {
+      currentImageId = id;
+      const imageObj = images.find(img => img.id == id);
+      if (imageObj) {
+        document.getElementById('modalImage').src = imageObj.dataURL;
+        document.getElementById('modalName').innerHTML = `<strong>Name:</strong> ${imageObj.name}`;
+        document.getElementById('modalDate').innerHTML = `<strong>Datum:</strong> ${imageObj.date}`;
+        document.getElementById('modal').classList.add('active');
+      }
     }
 
-    document.getElementById('closeModal').addEventListener('click', function() {
+    // Schließt das Modal
+    function closeModal() {
       document.getElementById('modal').classList.remove('active');
+      currentImageId = null;
+    }
+    document.getElementById('closeModal').addEventListener('click', closeModal);
+    document.getElementById('modal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
     });
 
-    // Schließe das Modal, wenn außerhalb des Bildes geklickt wird
-    document.getElementById('modal').addEventListener('click', function(e) {
-      if (e.target.id === 'modal') {
-        document.getElementById('modal').classList.remove('active');
+    // Download-Funktion: Erstellt einen Link und triggert den Download
+    document.getElementById('downloadBtn').addEventListener('click', function() {
+      const imageObj = images.find(img => img.id == currentImageId);
+      if (imageObj) {
+        const a = document.createElement('a');
+        a.href = imageObj.dataURL;
+        a.download = imageObj.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
       }
+    });
+
+    // Löschen des Bildes
+    document.getElementById('deleteBtn').addEventListener('click', function() {
+      if (confirm('Bild wirklich löschen?')) {
+        images = images.filter(img => img.id != currentImageId);
+        saveImages();
+        renderGallery();
+        closeModal();
+      }
+    });
+
+    // Ersetzen des Bildes: Öffnet den versteckten File-Input
+    document.getElementById('replaceBtn').addEventListener('click', function() {
+      document.getElementById('replaceInput').click();
+    });
+    document.getElementById('replaceInput').addEventListener('change', function(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const dataURL = e.target.result;
+          images = images.map(img => {
+            if (img.id == currentImageId) {
+              return {
+                ...img,
+                name: file.name,
+                date: new Date().toLocaleString(),
+                dataURL: dataURL
+              };
+            }
+            return img;
+          });
+          saveImages();
+          renderGallery();
+          openModal(currentImageId);
+        };
+        reader.readAsDataURL(file);
+      }
+      event.target.value = '';
     });
   </script>
 </body>
